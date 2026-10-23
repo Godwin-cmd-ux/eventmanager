@@ -1,0 +1,52 @@
+# Version control and local tooling
+.git
+.gitignore
+.gitattributes
+.github
+.vscode
+.idea
+.fleet
+.nova
+.zed
+.DS_Store
+Thumbs.db
+
+# Secrets: configuration comes from the environment at run time
+.env
+.env.local
+.env.production
+.env.backup
+*.pem
+
+# Installed dependencies (rebuilt inside the image)
+/vendor
+/node_modules
+
+# Generated front-end assets (built in the assets stage)
+/public/build
+/public/hot
+/public/storage
+
+# Runtime state; the container recreates what it needs
+/storage/*.key
+/storage/logs/*
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/framework/testing/*
+/storage/pail
+/bootstrap/cache/*
+!/bootstrap/cache/.gitignore
+
+# Tests and dev-only tooling are not shipped to production
+/tests
+/phpunit.xml
+/.phpunit.cache
+/.phpactor.json
+/auth.json
+
+# Offline card generation assets (~200 MB) and the removed React client
+/cards
+/legacy-react
+
+*.log

@@ -14,6 +14,20 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Behind a TLS-terminating proxy (load balancer, CDN, nginx sidecar)
+        // the forwarded headers have to be trusted, otherwise Laravel builds
+        // http:// URLs and drops secure session cookies. Opt in from the
+        // environment: TRUSTED_PROXIES="*" or a comma-separated CIDR list.
+        $proxies = env('TRUSTED_PROXIES');
+
+        if (is_string($proxies) && $proxies !== '') {
+            $middleware->trustProxies(
+                at: $proxies === '*'
+                    ? '*'
+                    : array_map('trim', explode(',', $proxies)),
+            );
+        }
+
         $middleware->alias([
             'supabase.user' => EnsureSupabaseUser::class,
             'guest.session' => EnsureSupabaseGuest::class,

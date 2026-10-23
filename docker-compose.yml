@@ -1,0 +1,43 @@
+name: wedding-scan
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: wedding-scan:latest
+    restart: unless-stopped
+    init: true
+
+    # Production values live in .env (or point ENV_FILE at another file, e.g.
+    # .env.production, so a developer's local .env is left alone).
+    env_file:
+      - "${ENV_FILE:-.env}"
+
+    # Production defaults. Anything not listed here is taken from .env.
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      LOG_CHANNEL: stderr
+      SESSION_DRIVER: file
+      CACHE_STORE: file
+      QUEUE_CONNECTION: sync
+
+    ports:
+      - "${APP_PORT:-8080}:80"
+
+    volumes:
+      # Sessions, cache, compiled views and logs survive restarts and rebuilds.
+      - app-storage:/var/www/html/storage
+
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+    stop_grace_period: 15s
+
+volumes:
+  app-storage:
