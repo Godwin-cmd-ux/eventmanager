@@ -168,6 +168,11 @@
                     </button>
                 </form>
 
+                <p class="auth-trust">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 7v5c0 4.4 3.4 8.3 8 9 4.6-.7 8-4.6 8-9V7l-8-4Z" /><path d="m9 12 2 2 4-4" /></svg>
+                    <span>Your request is reviewed before scanning access is granted.</span>
+                </p>
+
                 <p class="auth-footer">
                     Already registered?
                     <a href="{{ route('login') }}">Sign in</a>
