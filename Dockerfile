@@ -54,8 +54,12 @@ FROM php:8.3-fpm-alpine AS runtime
 # nginx terminates HTTP in the container; supervisor keeps both daemons alive.
 # The base image already ships most extensions this app needs, so each one is
 # verified and only compiled when it is actually missing.
+#
+# Alpine names the Oniguruma runtime library `oniguruma` (there is no `libonig`
+# package). It is installed as a world package so it survives the removal of the
+# build dependencies below, in case mbstring ever has to be compiled here.
 RUN set -eux; \
-    apk add --no-cache nginx supervisor ca-certificates libonig libcurl; \
+    apk add --no-cache nginx supervisor ca-certificates oniguruma libcurl; \
     apk add --no-cache --virtual .build-deps $PHPIZE_DEPS oniguruma-dev curl-dev; \
     php -m | grep -qi '^mbstring$' || docker-php-ext-install -j"$(nproc)" mbstring; \
     php -m | grep -qi '^curl$'     || docker-php-ext-install -j"$(nproc)" curl; \
