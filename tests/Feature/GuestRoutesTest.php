@@ -59,7 +59,7 @@ class GuestRoutesTest extends TestCase
         Http::assertSent(fn ($request) => str_contains($request->url(), '/auth/v1/token'));
     }
 
-    public function test_registration_creates_a_confirmed_clerk_and_signs_them_in(): void
+    public function test_registration_activates_a_confirmed_clerk_and_signs_them_in(): void
     {
         Http::fake([
             '*/auth/v1/admin/users' => Http::response([
@@ -77,13 +77,17 @@ class GuestRoutesTest extends TestCase
             'email' => 'new.clerk@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
-        ])->assertRedirect(route('clerk.status'));
+        ])->assertRedirect(route('dashboard'));
 
         $this->assertSame('access-123', session('supabase.access_token'));
 
         Http::assertSent(fn ($request) => str_contains($request->url(), '/auth/v1/admin/users')
             && $request['email'] === 'new.clerk@example.com'
             && $request['email_confirm'] === true);
+
+        Http::assertSent(fn ($request) => $request->method() === 'PATCH'
+            && str_contains($request->url(), '/rest/v1/clerks')
+            && $request['status'] === 'active');
     }
 
     public function test_registration_rejects_an_existing_email(): void
@@ -104,6 +108,64 @@ class GuestRoutesTest extends TestCase
         ])->assertRedirect(route('register'))->assertSessionHasErrors([
             'email' => 'An account with this email already exists. Try logging in instead.',
         ]);
+    }
+
+    public function test_unconfirmed_clerk_is_confirmed_and_signed_in_on_login(): void
+    {
+        $attempts = 0;
+
+        Http::fake([
+            '*/auth/v1/token*' => function () use (&$attempts) {
+                $attempts++;
+
+                return $attempts === 1
+                    ? Http::response(['msg' => 'Email not confirmed'], 400)
+                    : Http::response($this->tokenPayload(), 200);
+            },
+            '*/auth/v1/admin/users*' => function ($request) {
+                if ($request->method() === 'GET') {
+                    return Http::response([
+                        'users' => [[
+                            'id' => 'user-1',
+                            'email' => 'clerk@example.com',
+                            'email_confirmed_at' => null,
+                        ]],
+                    ], 200);
+                }
+
+                return Http::response([
+                    'id' => 'user-1',
+                    'email' => 'clerk@example.com',
+                    'email_confirmed_at' => '2026-01-01T00:00:00Z',
+                ], 200);
+            },
+            '*/rest/v1/clerks*' => Http::response($this->activeClerkRows(), 200),
+        ]);
+
+        $this->post(route('login'), ['email' => 'clerk@example.com', 'password' => 'secret'])
+            ->assertRedirect(route('dashboard'));
+
+        $this->assertSame('access-123', session('supabase.access_token'));
+
+        Http::assertSent(fn ($request) => $request->method() === 'PUT'
+            && str_contains($request->url(), '/auth/v1/admin/users/user-1')
+            && $request['email_confirm'] === true);
+    }
+
+    public function test_pending_clerk_is_activated_on_login(): void
+    {
+        Http::fake([
+            '*/auth/v1/token*' => Http::response($this->tokenPayload(), 200),
+            '*/rest/v1/clerks*' => Http::response([], 200),
+        ]);
+
+        $this->post(route('login'), ['email' => 'clerk@example.com', 'password' => 'secret'])
+            ->assertRedirect(route('dashboard'));
+
+        Http::assertSent(fn ($request) => $request->method() === 'PATCH'
+            && str_contains($request->url(), '/rest/v1/clerks')
+            && str_contains($request->url(), 'status=eq.pending')
+            && $request['status'] === 'active');
     }
 
     public function test_successful_login_redirects_to_dashboard(): void

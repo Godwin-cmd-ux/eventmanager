@@ -9,6 +9,7 @@
 -- This is the merged, final state of:
 --   supabase/migrations/20261009000000_init_wedding_scanning.sql
 --   supabase/migrations/20261009000001_verify_scan_text_input.sql
+--   supabase/migrations/20261023000000_auto_activate_clerks.sql
 --
 -- Safe to run more than once: it only ever creates or replaces, never drops
 -- data. Depends on Supabase Auth (auth.users, auth.uid()) and PG 13+
@@ -66,7 +67,7 @@ create table if not exists public.clerks (
     full_name    text        not null,
     email        text        not null,
     auth_user_id uuid        not null,
-    status       text        not null default 'pending',
+    status       text        not null default 'active',
     created_at   timestamptz not null default now(),
 
     constraint clerks_status_chk
@@ -131,11 +132,11 @@ create index if not exists scanner_scanned_at_idx
     on public.scanner (scanned_at desc);
 
 -- -----------------------------------------------------------------------------
--- 4. Automatic pending-clerk record on Supabase Auth sign-up
+-- 4. Automatic active-clerk record on Supabase Auth sign-up
 -- -----------------------------------------------------------------------------
--- Registration is separated from authorization: every new auth user gets a
--- clerk row in 'pending'. Only a trusted operator (SQL editor / service role)
--- may later flip status to 'active'. Users can never self-approve through RLS.
+-- Clerks are trusted as soon as they register: every new auth user gets an
+-- active clerk row, with no email confirmation and no organizer approval step.
+-- An organizer can still suspend a clerk through the service role at any time.
 create or replace function public.handle_new_clerk()
 returns trigger
 language plpgsql
@@ -148,7 +149,7 @@ begin
         coalesce(new.raw_user_meta_data ->> 'full_name', ''),
         new.email,
         new.id,
-        'pending'
+        'active'
     )
     on conflict (auth_user_id) do nothing;
 
@@ -203,7 +204,7 @@ begin
         );
     end if;
 
-    -- Pending / suspended clerks are authenticated but not authorized.
+    -- Suspended clerks are authenticated but not authorized.
     if v_clerk_status <> 'active' then
         insert into public.scanner (guest_id, clerk_id, scan_result, failure_reason, scanned_at)
         values (null, v_clerk_id, 'failed', 'clerk_not_authorized', v_now);

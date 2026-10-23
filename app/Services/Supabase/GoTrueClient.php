@@ -67,6 +67,62 @@ class GoTrueClient
     }
 
     /**
+     * GET /auth/v1/admin/users (paginated)
+     *
+     * Clerks created before registration switched to the admin API may still
+     * be unconfirmed. Look them up so sign-in can confirm them on the spot.
+     */
+    public function findUserByEmail(string $email): ?array
+    {
+        $headers = [
+            'apikey' => $this->secretKey,
+            'Authorization' => 'Bearer '.$this->secretKey,
+        ];
+
+        for ($page = 1; $page <= 20; $page++) {
+            $body = $this->decode(
+                Http::withHeaders($headers)->get($this->url('admin/users', [
+                    'page' => $page,
+                    'per_page' => 1000,
+                ])),
+                'list users',
+            );
+
+            $users = $body['users'] ?? $body;
+
+            foreach ($users as $user) {
+                if (isset($user['email']) && strcasecmp((string) $user['email'], $email) === 0) {
+                    return $user;
+                }
+            }
+
+            if (count($users) < 1000) {
+                break;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * PUT /auth/v1/admin/users/{id}
+     *
+     * Marks the account as confirmed without sending a confirmation email.
+     */
+    public function confirmUser(string $userId): array
+    {
+        return $this->decode(
+            Http::withHeaders([
+                'apikey' => $this->secretKey,
+                'Authorization' => 'Bearer '.$this->secretKey,
+            ])->put($this->url('admin/users/'.rawurlencode($userId)), [
+                'email_confirm' => true,
+            ]),
+            'confirm user',
+        );
+    }
+
+    /**
      * GET /auth/v1/user
      */
     public function user(string $accessToken): array

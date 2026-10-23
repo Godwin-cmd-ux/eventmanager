@@ -49,16 +49,21 @@ class RegisteredUserController extends Controller
             ]);
         }
 
-        // The clerk is created already confirmed: access is granted by the
-        // organizer, never by clicking an email link. The Supabase trigger
-        // creates the pending clerk row automatically; insert a fallback only
-        // when the trigger did not run.
-        if (! empty($user['id']) && ! $this->clerks->findByAuthUserId($user['id'])) {
-            try {
-                $this->clerks->insertFromAuth($user);
-            } catch (\Throwable) {
-                // Ignore: the trigger likely won the race.
+        // The clerk is created already confirmed and active: access is granted
+        // immediately, with no email link and no organizer approval step. The
+        // Supabase trigger creates the clerk row automatically; insert a
+        // fallback only when the trigger did not run, then make sure a row left
+        // in 'pending' (for example by an older trigger) is activated.
+        if (! empty($user['id'])) {
+            if (! $this->clerks->findByAuthUserId($user['id'])) {
+                try {
+                    $this->clerks->insertFromAuth($user);
+                } catch (\Throwable) {
+                    // Ignore: the trigger likely won the race.
+                }
             }
+
+            $this->clerks->activatePending($user['id']);
         }
 
         try {
@@ -71,10 +76,14 @@ class RegisteredUserController extends Controller
             return redirect()->route('login')->with('toast', [
                 'tone' => 'success',
                 'title' => 'Account created',
-                'message' => 'Sign in to check your approval status.',
+                'message' => 'Sign in to start scanning.',
             ]);
         }
 
-        return redirect()->route('clerk.status');
+        return redirect()->route('dashboard')->with('toast', [
+            'tone' => 'success',
+            'title' => 'Account created',
+            'message' => 'You can start verifying invitations right away.',
+        ]);
     }
 }

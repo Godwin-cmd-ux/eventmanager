@@ -44,6 +44,16 @@ class ClerkRepository
         return $result[0] ?? [];
     }
 
+    public function activatePending(string $authUserId): array
+    {
+        $result = $this->postgrest->update('clerks', [
+            'auth_user_id' => 'eq.'.$authUserId,
+            'status' => 'eq.pending',
+        ], ['status' => 'active'], Config::get('supabase.secret_key'));
+
+        return $result[0] ?? [];
+    }
+
     public function suspend(string $email, ?string $token = null): array
     {
         $result = $this->postgrest->update('clerks', [
@@ -63,7 +73,7 @@ class ClerkRepository
             'auth_user_id' => $user['id'],
             'email' => $email,
             'full_name' => $fullName,
-            'status' => 'pending',
+            'status' => 'active',
         ], Config::get('supabase.secret_key'));
 
         return $result[0] ?? [];

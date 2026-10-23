@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Repositories\ClerkRepository;
 use App\Services\Supabase\GoTrueClient;
 use App\Services\Supabase\SupabaseException;
 use App\Services\Supabase\SupabaseSession;
@@ -16,6 +17,7 @@ class SessionController extends Controller
 {
     public function __construct(
         private readonly GoTrueClient $goTrue,
+        private readonly ClerkRepository $clerks,
         private readonly SupabaseSession $session,
     ) {}
 
@@ -32,8 +34,15 @@ class SessionController extends Controller
         ]);
 
         try {
-            $payload = $this->goTrue->signIn($data['email'], $data['password']);
+            $payload = $this->signInOrConfirm($data['email'], $data['password']);
             $this->session->store($payload);
+
+            // Clerks no longer need approval: activate any account still left
+            // in 'pending' by an earlier registration.
+            $userId = $payload['user']['id'] ?? null;
+            if ($userId) {
+                $this->clerks->activatePending($userId);
+            }
         } catch (SupabaseException $e) {
             $msg = $e->getMessage();
 
@@ -51,6 +60,32 @@ class SessionController extends Controller
             'title' => 'Signed in',
             'message' => 'You are ready to verify invitations.',
         ]);
+    }
+
+    /**
+     * Sign in, auto-confirming the account if Supabase still considers it
+     * unconfirmed. Clerks are approved by the organizer, not by email, so an
+     * old unconfirmed account must not block access.
+     */
+    private function signInOrConfirm(string $email, string $password): array
+    {
+        try {
+            return $this->goTrue->signIn($email, $password);
+        } catch (SupabaseException $e) {
+            if (! preg_match('/email not confirmed/i', $e->getMessage())) {
+                throw $e;
+            }
+        }
+
+        $user = $this->goTrue->findUserByEmail($email);
+
+        if ($user === null || empty($user['id'])) {
+            throw new SupabaseException(['msg' => 'Email not confirmed'], 400, 'confirm user');
+        }
+
+        $this->goTrue->confirmUser($user['id']);
+
+        return $this->goTrue->signIn($email, $password);
     }
 
     public function destroy(): RedirectResponse
