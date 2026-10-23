@@ -2,7 +2,7 @@
 
 @section('title', 'Sign in · Vows')
 @section('body_class', 'page page--auth')
-@section('theme_color', '#10132c')
+@section('theme_color', '#17402f')
 
 @section('content')
 <div class="auth">
@@ -10,7 +10,7 @@
         @include('partials.brand', ['brandMeta' => 'Wedding Entrance'])
 
         <div class="auth__pitch">
-            <h1 class="auth__title">Every guest, <em>verified</em> in a single scan.</h1>
+            <p class="auth__title">Every guest, <em>verified</em> in a single scan.</p>
             <p class="auth__lede">
                 A calm, reliable door. Scan the invitation, confirm the name, and let
                 the evening begin.
@@ -51,7 +51,8 @@
             </div>
 
             <header class="auth-header">
-                <h2 class="auth-title">Clerk Login</h2>
+                <p class="eyebrow">Clerk access</p>
+                <h1 class="auth-title">Clerk Login</h1>
                 <p class="auth-subtitle">Welcome back. Sign in to start verifying invitations.</p>
             </header>
 

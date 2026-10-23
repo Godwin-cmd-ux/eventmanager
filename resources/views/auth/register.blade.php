@@ -2,7 +2,7 @@
 
 @section('title', 'Create your clerk account · Vows')
 @section('body_class', 'page page--auth')
-@section('theme_color', '#10132c')
+@section('theme_color', '#17402f')
 
 @section('content')
 <div class="auth">
@@ -10,7 +10,7 @@
         @include('partials.brand', ['brandMeta' => 'Wedding Entrance'])
 
         <div class="auth__pitch">
-            <h1 class="auth__title">Join the team <em>at the door</em>.</h1>
+            <p class="auth__title">Join the team <em>at the door</em>.</p>
             <p class="auth__lede">
                 Request access and the organizer will approve you. Then scans take
                 seconds, and every guest is checked against the list.
@@ -64,7 +64,8 @@
                 </div>
             @else
                 <header class="auth-header">
-                    <h2 class="auth-title">Clerk Registration</h2>
+                    <p class="eyebrow">Request access</p>
+                    <h1 class="auth-title">Clerk Registration</h1>
                     <p class="auth-subtitle">Create an account to request scanning access.</p>
                 </header>
 

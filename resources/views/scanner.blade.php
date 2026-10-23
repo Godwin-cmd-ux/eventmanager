@@ -2,7 +2,7 @@
 
 @section('title', 'Scan Invitation')
 @section('body_class', 'page page--scan')
-@section('theme_color', '#06080f')
+@section('theme_color', '#080b0a')
 @section('color_scheme', 'dark')
 
 @section('content')
@@ -16,6 +16,8 @@
     </header>
 
     <main class="app-main app-main--scan" id="main">
+        <h1 class="sr-only">Scan invitation</h1>
+
         <div class="scan-stage">
             <div id="qr-reader" class="qr-reader"></div>
             <span class="scan-stage__frame" aria-hidden="true"></span>
