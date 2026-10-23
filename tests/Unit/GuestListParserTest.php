@@ -58,7 +58,9 @@ class GuestListParserTest extends TestCase
 
     public function test_it_parses_the_shipped_names_file(): void
     {
-        $path = dirname(__DIR__, 2).'/cards/names.txt';
+        // The card generator (and its names.txt) now lives outside the repo,
+        // so the shipped list is kept here as the parser's reference fixture.
+        $path = dirname(__DIR__).'/Fixtures/names.txt';
 
         $this->assertFileExists($path);
 
