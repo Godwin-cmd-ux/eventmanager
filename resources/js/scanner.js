@@ -1,4 +1,5 @@
 import { Html5Qrcode } from 'html5-qrcode';
+import { toast } from './toast';
 
 const FAILURE_COPY = {
     invalid_qr: {
@@ -78,7 +79,21 @@ class ScannerApp {
         this.status = document.getElementById('scan-status');
         this.errorCard = document.getElementById('scan-error');
         this.errorAlert = this.errorCard.querySelector('.alert');
+        this.stage = document.querySelector('.scan-stage');
         this.processing = false;
+
+        // The sweep line travels the height of the viewfinder, which changes
+        // once the camera stream sets its aspect ratio.
+        if (this.stage && 'ResizeObserver' in window) {
+            this.stageObserver = new ResizeObserver(() => this.syncStageHeight());
+            this.stageObserver.observe(this.stage);
+        }
+        window.addEventListener('resize', () => this.syncStageHeight(), { passive: true });
+    }
+
+    syncStageHeight() {
+        if (!this.stage) return;
+        this.stage.style.setProperty('--scan-height', `${this.stage.clientHeight}px`);
     }
 
     setStatus(text, tone = 'info') {
@@ -170,6 +185,23 @@ class ScannerApp {
         return backdrop;
     }
 
+    // Move focus into the dialog and let Escape dismiss it, so a clerk on a
+    // keyboard or a screen reader is never trapped behind the overlay.
+    activate(backdrop) {
+        const button = backdrop.querySelector('.btn');
+        if (button) {
+            window.setTimeout(() => button.focus(), 60);
+        }
+
+        backdrop.onKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                this.resume(backdrop);
+            }
+        };
+        document.addEventListener('keydown', backdrop.onKeyDown);
+    }
+
     showSuccess(guest) {
         const backdrop = this.buildModal('success', (modal) => {
             modal.appendChild(
@@ -200,6 +232,7 @@ class ScannerApp {
             modal.appendChild(button);
         });
         document.body.appendChild(backdrop);
+        this.activate(backdrop);
     }
 
     showFailure(reason, guest) {
@@ -220,9 +253,14 @@ class ScannerApp {
             modal.appendChild(button);
         });
         document.body.appendChild(backdrop);
+        this.activate(backdrop);
     }
 
     resume(backdrop) {
+        if (backdrop.onKeyDown) {
+            document.removeEventListener('keydown', backdrop.onKeyDown);
+            backdrop.onKeyDown = null;
+        }
         backdrop.remove();
         try {
             this.reader.resume();
@@ -235,3 +273,21 @@ class ScannerApp {
 
 const app = new ScannerApp();
 app.start();
+
+// Venue wifi drops in and out; tell the clerk before a scan fails silently.
+window.addEventListener('offline', () => {
+    toast({
+        tone: 'warning',
+        title: 'Connection lost',
+        message: 'Scans cannot be verified until you are back online.',
+        duration: 9000,
+    });
+});
+
+window.addEventListener('online', () => {
+    toast({
+        tone: 'success',
+        title: 'Back online',
+        message: 'Verification is available again.',
+    });
+});

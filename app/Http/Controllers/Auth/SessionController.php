@@ -46,7 +46,11 @@ class SessionController extends Controller
             throw ValidationException::withMessages(['email' => $friendly]);
         }
 
-        return Redirect::route('dashboard');
+        return Redirect::route('dashboard')->with('toast', [
+            'tone' => 'success',
+            'title' => 'Signed in',
+            'message' => 'You are ready to verify invitations.',
+        ]);
     }
 
     public function destroy(): RedirectResponse
@@ -58,6 +62,10 @@ class SessionController extends Controller
 
         $this->session->forget();
 
-        return Redirect::route('login');
+        return Redirect::route('login')->with('toast', [
+            'tone' => 'info',
+            'title' => 'Signed out',
+            'message' => 'Your session has ended safely.',
+        ]);
     }
 }
