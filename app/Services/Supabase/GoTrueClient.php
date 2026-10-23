@@ -10,6 +10,7 @@ class GoTrueClient
     public function __construct(
         private readonly string $baseUrl,
         private readonly string $anonKey,
+        private readonly string $secretKey,
     ) {}
 
     /**
@@ -43,20 +44,25 @@ class GoTrueClient
     }
 
     /**
-     * POST /auth/v1/signup
-     * Returns either a full session (when email confirmation is disabled) or
-     * only a 'user' record (when confirmation is required).
+     * POST /auth/v1/admin/users
+     *
+     * Creates an already-confirmed account with the service key. Clerks are
+     * approved by the organizer, not by email, so registration must not depend
+     * on a confirmation link (or on Supabase's email rate limit).
      */
-    public function signUp(string $email, string $password, string $fullName): array
+    public function createConfirmedUser(string $email, string $password, string $fullName): array
     {
         return $this->decode(
-            Http::withHeaders(['apikey' => $this->anonKey])
-                ->post($this->url('signup'), [
-                    'email' => $email,
-                    'password' => $password,
-                    'data' => ['full_name' => $fullName],
-                ]),
-            'sign up',
+            Http::withHeaders([
+                'apikey' => $this->secretKey,
+                'Authorization' => 'Bearer '.$this->secretKey,
+            ])->post($this->url('admin/users'), [
+                'email' => $email,
+                'password' => $password,
+                'email_confirm' => true,
+                'user_metadata' => ['full_name' => $fullName],
+            ]),
+            'create user',
         );
     }
 

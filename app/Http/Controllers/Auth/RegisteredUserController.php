@@ -34,27 +34,26 @@ class RegisteredUserController extends Controller
         ]);
 
         try {
-            $payload = $this->goTrue->signUp(
+            $user = $this->goTrue->createConfirmedUser(
                 $data['email'],
                 $data['password'],
                 $data['full_name'],
             );
         } catch (SupabaseException $e) {
-            if (preg_match('/already registered|already exists|duplicate/i', $e->getMessage())) {
-                throw ValidationException::withMessages([
-                    'email' => 'An account with this email already exists. Try logging in instead.',
-                ]);
-            }
+            $duplicate = (bool) preg_match('/already (been )?registered|already exists|duplicate|email_exists/i', $e->getMessage());
 
             throw ValidationException::withMessages([
-                'email' => $e->getMessage(),
+                'email' => $duplicate
+                    ? 'An account with this email already exists. Try logging in instead.'
+                    : $e->getMessage(),
             ]);
         }
 
-        // The Supabase trigger creates the pending clerk row automatically.
-        // Insert a fallback only when the trigger did not run.
-        $user = $payload['user'] ?? null;
-        if ($user && ! empty($user['id']) && ! $this->clerks->findByAuthUserId($user['id'])) {
+        // The clerk is created already confirmed: access is granted by the
+        // organizer, never by clicking an email link. The Supabase trigger
+        // creates the pending clerk row automatically; insert a fallback only
+        // when the trigger did not run.
+        if (! empty($user['id']) && ! $this->clerks->findByAuthUserId($user['id'])) {
             try {
                 $this->clerks->insertFromAuth($user);
             } catch (\Throwable) {
@@ -62,14 +61,20 @@ class RegisteredUserController extends Controller
             }
         }
 
-        // When email confirmation is disabled GoTrue returns a session; sign
-        // the clerk in and show them the pending status page.
-        if (! empty($payload['access_token'])) {
-            $this->session->store($payload);
-
-            return redirect()->route('clerk.status');
+        try {
+            $this->session->store(
+                $this->goTrue->signIn($data['email'], $data['password']),
+            );
+        } catch (SupabaseException) {
+            // The account exists; let the clerk sign in manually rather than
+            // leaving them on a form that would now reject their email.
+            return redirect()->route('login')->with('toast', [
+                'tone' => 'success',
+                'title' => 'Account created',
+                'message' => 'Sign in to check your approval status.',
+            ]);
         }
 
-        return redirect()->route('register')->with('status', 'confirm_email');
+        return redirect()->route('clerk.status');
     }
 }

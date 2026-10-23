@@ -59,6 +59,53 @@ class GuestRoutesTest extends TestCase
         Http::assertSent(fn ($request) => str_contains($request->url(), '/auth/v1/token'));
     }
 
+    public function test_registration_creates_a_confirmed_clerk_and_signs_them_in(): void
+    {
+        Http::fake([
+            '*/auth/v1/admin/users' => Http::response([
+                'id' => 'user-2',
+                'email' => 'new.clerk@example.com',
+                'email_confirmed_at' => '2026-01-01T00:00:00Z',
+                'user_metadata' => ['full_name' => 'New Clerk'],
+            ], 200),
+            '*/auth/v1/token*' => Http::response($this->tokenPayload(), 200),
+            '*/rest/v1/clerks*' => Http::response([], 200),
+        ]);
+
+        $this->post(route('register'), [
+            'full_name' => 'New Clerk',
+            'email' => 'new.clerk@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ])->assertRedirect(route('clerk.status'));
+
+        $this->assertSame('access-123', session('supabase.access_token'));
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/auth/v1/admin/users')
+            && $request['email'] === 'new.clerk@example.com'
+            && $request['email_confirm'] === true);
+    }
+
+    public function test_registration_rejects_an_existing_email(): void
+    {
+        Http::fake([
+            '*/auth/v1/admin/users' => Http::response([
+                'code' => 422,
+                'error_code' => 'email_exists',
+                'msg' => 'A user with this email address has already been registered',
+            ], 422),
+        ]);
+
+        $this->from(route('register'))->post(route('register'), [
+            'full_name' => 'New Clerk',
+            'email' => 'new.clerk@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ])->assertRedirect(route('register'))->assertSessionHasErrors([
+            'email' => 'An account with this email already exists. Try logging in instead.',
+        ]);
+    }
+
     public function test_successful_login_redirects_to_dashboard(): void
     {
         Http::fake([

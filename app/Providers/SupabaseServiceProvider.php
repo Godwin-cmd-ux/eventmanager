@@ -18,6 +18,7 @@ class SupabaseServiceProvider extends ServiceProvider
             return new GoTrueClient(
                 $config['url'],
                 $config['anon_key'],
+                $config['secret_key'],
             );
         });
 
