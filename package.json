@@ -1,0 +1,15 @@
+{
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite"
+    },
+    "dependencies": {
+        "html5-qrcode": "^2.3.8"
+    },
+    "devDependencies": {
+        "laravel-vite-plugin": "^2.0.0",
+        "vite": "^7.0.7"
+    }
+}
