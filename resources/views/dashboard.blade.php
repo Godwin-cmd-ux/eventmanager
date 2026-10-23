@@ -135,7 +135,7 @@
 
         <footer class="app-footer">
             <span class="app-footer__mark">Vows · Wedding entrance</span>
-            <span>Organizer-approved clerk</span>
+            <span>Registered clerk</span>
         </footer>
     </main>
 </div>

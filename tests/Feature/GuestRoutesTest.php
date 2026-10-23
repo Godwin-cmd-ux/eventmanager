@@ -181,9 +181,23 @@ class GuestRoutesTest extends TestCase
         $this->assertSame('user-1', session('supabase.user.id'));
     }
 
+    public function test_deleted_supabase_user_is_signed_out_immediately(): void
+    {
+        Http::fake([
+            '*/auth/v1/user*' => Http::response(['msg' => 'User not found'], 404),
+        ]);
+
+        $this->withSession($this->clerkSession())
+            ->get(route('dashboard'))
+            ->assertRedirect(route('login'));
+
+        $this->assertNull(session('supabase.access_token'));
+    }
+
     public function test_active_clerk_can_load_the_dashboard(): void
     {
         Http::fake([
+            '*/auth/v1/user*' => Http::response($this->tokenPayload()['user'], 200),
             '*/rest/v1/clerks*' => Http::response($this->activeClerkRows(), 200),
             '*/rest/v1/scanner*' => Http::response([
                 ['scan_result' => 'success'],
@@ -206,6 +220,7 @@ class GuestRoutesTest extends TestCase
         $clerk[0]['status'] = 'pending';
 
         Http::fake([
+            '*/auth/v1/user*' => Http::response($this->tokenPayload()['user'], 200),
             '*/rest/v1/clerks*' => Http::response($clerk, 200),
         ]);
 
@@ -217,6 +232,7 @@ class GuestRoutesTest extends TestCase
     public function test_active_clerk_can_verify_a_scan(): void
     {
         Http::fake([
+            '*/auth/v1/user*' => Http::response($this->tokenPayload()['user'], 200),
             '*/rest/v1/clerks*' => Http::response($this->activeClerkRows(), 200),
             '*/rest/v1/rpc/verify_guest_scan' => Http::response([
                 'result' => 'success',
@@ -244,6 +260,7 @@ class GuestRoutesTest extends TestCase
         $clerk[0]['status'] = 'suspended';
 
         Http::fake([
+            '*/auth/v1/user*' => Http::response($this->tokenPayload()['user'], 200),
             '*/rest/v1/clerks*' => Http::response($clerk, 200),
         ]);
 

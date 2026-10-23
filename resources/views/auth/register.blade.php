@@ -12,7 +12,7 @@
         <div class="auth__pitch">
             <p class="auth__title">Join the team <em>at the door</em>.</p>
             <p class="auth__lede">
-                Request access and the organizer will approve you. Then scans take
+                Create your account and start scanning right away. Scans take
                 seconds, and every guest is checked against the list.
             </p>
 
@@ -20,8 +20,8 @@
                 <li class="auth__feature">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M19 8v6M22 11h-6" /></svg>
                     <div>
-                        <strong>Organizer approval</strong>
-                        <span>Only approved clerks can scan at an event.</span>
+                        <strong>Instant access</strong>
+                        <span>Sign up and start scanning at the door immediately.</span>
                     </div>
                 </li>
                 <li class="auth__feature">
@@ -35,13 +35,13 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v4l3 2" /><circle cx="12" cy="12" r="9" /></svg>
                     <div>
                         <strong>Ready in a minute</strong>
-                        <span>Request access, then wait for the green light.</span>
+                        <span>No emails to confirm and no approval to wait for.</span>
                     </div>
                 </li>
             </ul>
         </div>
 
-        <p class="auth__footnote">Clerk access is approved by the event organizer.</p>
+        <p class="auth__footnote">Clerk accounts are active the moment you sign up.</p>
     </aside>
 
     <main class="auth__panel" id="main">
@@ -51,9 +51,9 @@
             </div>
 
             <header class="auth-header">
-                <p class="eyebrow">Request access</p>
+                <p class="eyebrow">Get started</p>
                 <h1 class="auth-title">Clerk Registration</h1>
-                <p class="auth-subtitle">Create an account to request scanning access.</p>
+                <p class="auth-subtitle">Create an account and start scanning immediately.</p>
             </header>
 
             @if ($errors->any() && ! $errors->has('full_name') && ! $errors->has('email') && ! $errors->has('password'))
@@ -151,13 +151,13 @@
                 </div>
 
                 <button type="submit" class="btn btn--primary btn--lg btn--block">
-                    Request access
+                    Create account
                 </button>
             </form>
 
             <p class="auth-trust">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 7v5c0 4.4 3.4 8.3 8 9 4.6-.7 8-4.6 8-9V7l-8-4Z" /><path d="m9 12 2 2 4-4" /></svg>
-                <span>Your request is reviewed before scanning access is granted.</span>
+                <span>Your account is ready immediately after registration.</span>
             </p>
 
             <p class="auth-footer">
